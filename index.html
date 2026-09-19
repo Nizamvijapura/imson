@@ -4,129 +4,878 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IMSON Toner Finder</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#222}
-header{background:#512826;color:#fff;text-align:center;padding:22px 15px}
-h1{margin:0;font-size:28px}.sub{margin-top:5px;opacity:.9}
-main{max-width:1000px;margin:20px auto;padding:0 15px}.box{background:#fff;border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 2px 12px #0001}
-input,button{font-size:16px;padding:12px;border-radius:8px}input{width:100%;border:2px solid #ddd}
-button{border:0;background:#512826;color:#fff;cursor:pointer;margin:5px 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:15px}
-.card{border:1px solid #ddd;border-radius:12px;padding:16px}.model{font-size:23px;font-weight:800;color:#512826}
-.rate{font-size:22px;font-weight:800;margin-top:10px}.stock{font-size:18px;font-weight:700}
-.badge{display:inline-block;background:#eee;padding:5px 8px;border-radius:15px;margin:3px;font-size:12px}
-.hidden{display:none}.muted{color:#666;font-size:13px}.error{color:#a00}.success{color:#176b2c}
-.adminrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.admincard{border-top:1px solid #ddd;margin-top:12px;padding-top:12px}
-@media(max-width:600px){h1{font-size:24px}.adminrow{grid-template-columns:1fr}}
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f6f8;
+  color:#222;
+}
+
+header{
+  background:#512826;
+  color:#fff;
+  text-align:center;
+  padding:22px 15px;
+}
+
+h1{
+  margin:0;
+  font-size:28px;
+}
+
+.sub{
+  margin-top:5px;
+  opacity:.9;
+}
+
+main{
+  max-width:1000px;
+  margin:20px auto;
+  padding:0 15px;
+}
+
+.box{
+  background:#fff;
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:18px;
+  box-shadow:0 2px 12px #0001;
+}
+
+input,button{
+  font-size:16px;
+  padding:12px;
+  border-radius:8px;
+}
+
+input{
+  width:100%;
+  border:2px solid #ddd;
+  outline:none;
+}
+
+input:focus{
+  border-color:#512826;
+}
+
+button{
+  border:0;
+  background:#512826;
+  color:#fff;
+  cursor:pointer;
+  margin:5px 0;
+}
+
+button:hover{
+  opacity:.9;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:15px;
+}
+
+.card{
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:16px;
+  background:#fff;
+}
+
+.model{
+  font-size:23px;
+  font-weight:800;
+  color:#512826;
+}
+
+.alt{
+  color:#555;
+  margin-top:4px;
+}
+
+.rate{
+  font-size:22px;
+  font-weight:800;
+  margin-top:10px;
+  color:#176b2c;
+}
+
+.stock{
+  font-size:18px;
+  font-weight:700;
+  margin-top:5px;
+}
+
+.badge{
+  display:inline-block;
+  background:#eee;
+  padding:5px 8px;
+  border-radius:15px;
+  margin:3px;
+  font-size:12px;
+}
+
+.hidden{
+  display:none;
+}
+
+.muted{
+  color:#666;
+  font-size:13px;
+}
+
+.error{
+  color:#a00;
+  font-weight:bold;
+}
+
+.success{
+  color:#176b2c;
+  font-weight:bold;
+}
+
+.adminrow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.admincard{
+  border-top:1px solid #ddd;
+  margin-top:12px;
+  padding-top:12px;
+}
+
+.loginbox{
+  max-width:500px;
+}
+
+.status{
+  margin-bottom:10px;
+}
+
+.logout{
+  background:#777;
+}
+
+.savebtn{
+  width:100%;
+}
+
+@media(max-width:600px){
+  h1{
+    font-size:24px;
+  }
+
+  .adminrow{
+    grid-template-columns:1fr;
+  }
+}
 </style>
 </head>
-<body>
-<header><h1>IMSON® TONER FINDER</h1><div class="sub">Printer Model • Toner • Rate • Stock</div></header>
-<main>
-<section class="box">
-<input id="search" placeholder="🔎 Type 2725, NPG-87, C-EXV63, Canon iR 2725..." autocomplete="off">
-<p class="muted">Any printer model, toner model or alternate code can be searched.</p>
-</section>
-<section class="box"><div id="status" class="muted">Connecting...</div><div id="results" class="grid"></div></section>
 
+<body>
+
+<header>
+  <h1>IMSON® TONER FINDER</h1>
+  <div class="sub">Printer Model • Toner • Rate • Stock</div>
+</header>
+
+<main>
+
+<!-- SEARCH -->
 <section class="box">
-<button onclick="toggleAdmin()">🔐 Owner Update</button>
-<div id="admin" class="hidden">
-  <p class="muted">Only your Supabase Auth account should be used here. Do not give the admin password to dealers.</p>
-  <div id="login">
-    <input id="email" type="email" placeholder="Owner email">
-    <input id="password" type="password" placeholder="Password" style="margin-top:8px">
-    <button onclick="login()">Login</button>
-    <div id="loginMsg"></div>
-  </div>
-  <div id="panel" class="hidden">
-    <button onclick="logout()">Logout</button>
-    <h3>Update Rate / Stock</h3>
-    <div id="edit"></div>
-  </div>
-</div>
+
+  <input
+    id="search"
+    placeholder="🔎 Type 2725, NPG-87, C-EXV63, Canon iR 2725..."
+    autocomplete="off"
+  >
+
+  <p class="muted">
+    Search by toner model, alternate code or printer model.
+  </p>
+
 </section>
+
+
+<!-- RESULTS -->
+<section class="box">
+
+  <div id="status" class="muted">
+    Connecting to IMSON database...
+  </div>
+
+  <div id="results" class="grid"></div>
+
+</section>
+
+
+<!-- OWNER LOGIN -->
+<section class="box">
+
+  <button onclick="toggleAdmin()">
+    🔐 Owner Update
+  </button>
+
+  <div id="admin" class="hidden">
+
+    <p class="muted">
+      Owner login is required to update toner rate and stock.
+    </p>
+
+    <!-- LOGIN -->
+    <div id="login" class="loginbox">
+
+      <input
+        id="email"
+        type="email"
+        placeholder="Owner email"
+      >
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Password"
+        style="margin-top:8px"
+      >
+
+      <button onclick="login()">
+        Login
+      </button>
+
+      <div id="loginMsg"></div>
+
+    </div>
+
+
+    <!-- ADMIN PANEL -->
+    <div id="panel" class="hidden">
+
+      <button class="logout" onclick="logout()">
+        Logout
+      </button>
+
+      <h3>
+        Update Rate / Stock
+      </h3>
+
+      <div id="edit"></div>
+
+    </div>
+
+  </div>
+
+</section>
+
 </main>
 
-<script>
-/* =========================================================
-   STEP 1: PUT YOUR SUPABASE PROJECT VALUES HERE.
-   Supabase Dashboard -> Project Settings -> API
-   Use the Project URL and Publishable/Anon key only.
-   NEVER put the service_role/secret key in this HTML.
-   ========================================================= */
-sb_publishable_3m0dPOkN4D0gfNXYubmPVg_6wRVC8wZ
-https://jehjwziynmklhstfksfe.supabase.co
 
-let sb = null;
+<script>
+
+/* =========================================================
+   IMSON TONER FINDER
+   SUPABASE CONNECTION
+   ========================================================= */
+
+const SUPABASE_URL =
+"https://jehjwziynmklhstfksfe.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_3m0dPOkN4D0gfNXYubmPVg_6wRVC8wZ";
+
+
+/* Create Supabase client */
+
+const sb = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+
+/* Store toner records */
+
 let rows = [];
 
-function configured(){
-  return SUPABASE_URL.startsWith("http") && !SUPABASE_KEY.startsWith("PASTE_");
-}
-if(configured()) sb = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+/* =========================================================
+   LOAD DATABASE
+   ========================================================= */
 
 async function load(){
-  if(!configured()){
-    document.getElementById("status").innerHTML =
-      '<span class="error">Supabase setup required: open SETUP.md.</span>';
+
+  const status =
+    document.getElementById("status");
+
+  status.textContent =
+    "Connecting to IMSON database...";
+
+  try{
+
+    const { data, error } =
+      await sb
+        .from("toners")
+        .select("*")
+        .eq("active", true)
+        .order("toner_model");
+
+
+    if(error){
+
+      console.error(error);
+
+      status.innerHTML =
+        '<span class="error">' +
+        'Database Error: ' +
+        esc(error.message) +
+        '</span>';
+
+      return;
+    }
+
+
+    rows = data || [];
+
+
+    status.innerHTML =
+      '<span class="success">' +
+      rows.length +
+      ' toner records available' +
+      '</span>';
+
+
+    render();
+
+
+    /* Check whether owner is already logged in */
+
+    const sessionResult =
+      await sb.auth.getSession();
+
+    if(
+      sessionResult.data &&
+      sessionResult.data.session
+    ){
+
+      showPanel();
+
+    }
+
+  }
+  catch(error){
+
+    console.error(error);
+
+    status.innerHTML =
+      '<span class="error">' +
+      'Connection Error: ' +
+      esc(error.message) +
+      '</span>';
+
+  }
+
+}
+
+
+/* =========================================================
+   SEARCH / DISPLAY
+   ========================================================= */
+
+function render(){
+
+  const q =
+    document
+      .getElementById("search")
+      .value
+      .toLowerCase()
+      .trim();
+
+
+  const found =
+    rows.filter(x => {
+
+      const toner =
+        x.toner_model || "";
+
+      const alternate =
+        x.alternate_code || "";
+
+      const printers =
+        Array.isArray(x.printers)
+          ? x.printers.join(" ")
+          : String(x.printers || "");
+
+
+      const text =
+        (
+          toner +
+          " " +
+          alternate +
+          " " +
+          printers
+        ).toLowerCase();
+
+
+      return text.includes(q);
+
+    });
+
+
+  const box =
+    document.getElementById("results");
+
+
+  if(!found.length){
+
+    box.innerHTML =
+      '<div class="muted">' +
+      'No matching toner/printer found.' +
+      '</div>';
+
     return;
   }
-  const {data,error}=await sb.from("toners").select("*").eq("active",true).order("toner_model");
-  if(error){document.getElementById("status").textContent="Database error: "+error.message;return}
-  rows=data||[]; document.getElementById("status").textContent=rows.length+" toner records available";
-  render();
-  if((await sb.auth.getSession()).data.session) showPanel();
-}
-function render(){
-  const q=document.getElementById("search").value.toLowerCase().trim();
-  const found=rows.filter(x=>(x.toner_model+" "+(x.alternate_code||"")+" "+(x.printers||[]).join(" ")).toLowerCase().includes(q));
-  const box=document.getElementById("results");
-  if(!found.length){box.innerHTML='<div class="muted">No matching toner/printer found.</div>';return}
-  box.innerHTML=found.map(x=>`
-    <article class="card">
-      <div class="model">${esc(x.toner_model)}</div>
-      <div>${esc(x.alternate_code||"")}</div>
-      <div class="rate">💰 ₹${Number(x.selling_rate||0).toLocaleString("en-IN")}</div>
-      <div class="stock">📦 Stock: ${Number(x.stock||0)}</div>
-      <p><b>Compatible Printers</b></p>
-      ${(x.printers||[]).map(p=>`<span class="badge">${esc(p)}</span>`).join("")}
-    </article>`).join("");
-}
-function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-document.getElementById("search").addEventListener("input",render);
 
-function toggleAdmin(){document.getElementById("admin").classList.toggle("hidden")}
+
+  box.innerHTML =
+    found.map(x => `
+
+      <article class="card">
+
+        <div class="model">
+          ${esc(x.toner_model || "")}
+        </div>
+
+        <div class="alt">
+          ${esc(x.alternate_code || "")}
+        </div>
+
+        <div class="rate">
+          💰 ₹${Number(
+            x.selling_rate || 0
+          ).toLocaleString("en-IN")}
+        </div>
+
+        <div class="stock">
+          📦 Stock: ${Number(
+            x.stock || 0
+          )}
+        </div>
+
+        <p>
+          <b>Compatible Printers</b>
+        </p>
+
+        ${
+          (
+            Array.isArray(x.printers)
+              ? x.printers
+              : []
+          )
+          .map(p =>
+            `<span class="badge">
+              ${esc(p)}
+            </span>`
+          )
+          .join("")
+        }
+
+      </article>
+
+    `).join("");
+
+}
+
+
+/* =========================================================
+   HTML SECURITY
+   ========================================================= */
+
+function esc(s){
+
+  return String(s).replace(
+    /[&<>"']/g,
+    function(m){
+
+      return {
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      }[m];
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   SEARCH EVENT
+   ========================================================= */
+
+document
+  .getElementById("search")
+  .addEventListener(
+    "input",
+    render
+  );
+
+
+/* =========================================================
+   OWNER AREA
+   ========================================================= */
+
+function toggleAdmin(){
+
+  document
+    .getElementById("admin")
+    .classList
+    .toggle("hidden");
+
+}
+
+
+/* =========================================================
+   OWNER LOGIN
+   ========================================================= */
+
 async function login(){
-  if(!sb)return;
-  const email=document.getElementById("email").value,password=document.getElementById("password").value;
-  const {error}=await sb.auth.signInWithPassword({email,password});
-  document.getElementById("loginMsg").textContent=error?error.message:"Logged in";
-  if(!error)showPanel();
+
+  if(!sb){
+
+    return;
+
+  }
+
+
+  const email =
+    document
+      .getElementById("email")
+      .value
+      .trim();
+
+
+  const password =
+    document
+      .getElementById("password")
+      .value;
+
+
+  const msg =
+    document.getElementById("loginMsg");
+
+
+  if(!email || !password){
+
+    msg.innerHTML =
+      '<span class="error">' +
+      'Please enter email and password.' +
+      '</span>';
+
+    return;
+
+  }
+
+
+  msg.textContent =
+    "Logging in...";
+
+
+  const { data, error } =
+    await sb.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+
+  if(error){
+
+    console.error(error);
+
+    msg.innerHTML =
+      '<span class="error">' +
+      esc(error.message) +
+      '</span>';
+
+    return;
+
+  }
+
+
+  msg.innerHTML =
+    '<span class="success">' +
+    'Login successful.' +
+    '</span>';
+
+
+  if(data && data.session){
+
+    showPanel();
+
+  }
+
 }
-async function logout(){await sb.auth.signOut();document.getElementById("panel").classList.add("hidden");document.getElementById("login").classList.remove("hidden")}
+
+
+/* =========================================================
+   LOGOUT
+   ========================================================= */
+
+async function logout(){
+
+  await sb.auth.signOut();
+
+
+  document
+    .getElementById("panel")
+    .classList
+    .add("hidden");
+
+
+  document
+    .getElementById("login")
+    .classList
+    .remove("hidden");
+
+
+  document
+    .getElementById("password")
+    .value = "";
+
+
+  document
+    .getElementById("loginMsg")
+    .textContent = "";
+
+}
+
+
+/* =========================================================
+   SHOW ADMIN PANEL
+   ========================================================= */
+
 async function showPanel(){
-  document.getElementById("login").classList.add("hidden");document.getElementById("panel").classList.remove("hidden");
-  document.getElementById("edit").innerHTML=rows.map(x=>`
-    <div class="admincard">
-      <b>${esc(x.toner_model)}</b><br>
-      <div class="adminrow">
-        <label>Rate ₹<input id="r${x.id}" type="number" step="0.01" value="${x.selling_rate}"></label>
-        <label>Stock<input id="s${x.id}" type="number" step="1" value="${x.stock}"></label>
+
+  document
+    .getElementById("login")
+    .classList
+    .add("hidden");
+
+
+  document
+    .getElementById("panel")
+    .classList
+    .remove("hidden");
+
+
+  if(!rows.length){
+
+    await load();
+
+  }
+
+
+  const edit =
+    document.getElementById("edit");
+
+
+  if(!rows.length){
+
+    edit.innerHTML =
+      '<p class="muted">' +
+      'No toner records available.' +
+      '</p>';
+
+    return;
+
+  }
+
+
+  edit.innerHTML =
+    rows.map(x => `
+
+      <div class="admincard">
+
+        <b>
+          ${esc(x.toner_model || "")}
+        </b>
+
+        ${
+          x.alternate_code
+            ? `<div class="muted">
+                ${esc(x.alternate_code)}
+               </div>`
+            : ""
+        }
+
+        <br>
+
+        <div class="adminrow">
+
+          <label>
+            Rate ₹
+
+            <input
+              id="r${x.id}"
+              type="number"
+              step="0.01"
+              value="${Number(
+                x.selling_rate || 0
+              )}"
+            >
+
+          </label>
+
+
+          <label>
+            Stock
+
+            <input
+              id="s${x.id}"
+              type="number"
+              step="1"
+              min="0"
+              value="${Number(
+                x.stock || 0
+              )}"
+            >
+
+          </label>
+
+        </div>
+
+
+        <button
+          class="savebtn"
+          onclick="save(${x.id})"
+        >
+          💾 Save ${esc(x.toner_model || "")}
+        </button>
+
       </div>
-      <button onclick="save(${x.id})">Save ${esc(x.toner_model)}</button>
-    </div>`).join("");
+
+    `).join("");
+
 }
+
+
+/* =========================================================
+   SAVE RATE / STOCK
+   ========================================================= */
+
 async function save(id){
-  const rate=Number(document.getElementById("r"+id).value||0);
-  const stock=Math.max(0,parseInt(document.getElementById("s"+id).value||0));
-  const {error}=await sb.from("toners").update({selling_rate:rate,stock:stock,updated_at:new Date().toISOString()}).eq("id",id);
-  if(error){alert(error.message);return}
-  alert("Updated");
-  await load(); showPanel();
+
+  const rateInput =
+    document.getElementById("r" + id);
+
+  const stockInput =
+    document.getElementById("s" + id);
+
+
+  if(!rateInput || !stockInput){
+
+    alert("Record not found.");
+
+    return;
+
+  }
+
+
+  const rate =
+    Number(
+      rateInput.value || 0
+    );
+
+
+  const stock =
+    Math.max(
+      0,
+      parseInt(
+        stockInput.value || 0,
+        10
+      )
+    );
+
+
+  if(rate < 0){
+
+    alert("Rate cannot be negative.");
+
+    return;
+
+  }
+
+
+  try{
+
+    const { error } =
+      await sb
+        .from("toners")
+        .update({
+          selling_rate: rate,
+          stock: stock,
+          updated_at:
+            new Date().toISOString()
+        })
+        .eq("id", id);
+
+
+    if(error){
+
+      console.error(error);
+
+      alert(
+        "Update failed:\n\n" +
+        error.message
+      );
+
+      return;
+
+    }
+
+
+    alert(
+      "✅ Rate / Stock updated successfully."
+    );
+
+
+    await load();
+
+
+    /* Re-open admin panel */
+
+    showPanel();
+
+  }
+  catch(error){
+
+    console.error(error);
+
+    alert(
+      "Update Error:\n\n" +
+      error.message
+    );
+
+  }
+
 }
+
+
+/* =========================================================
+   INITIAL LOAD
+   ========================================================= */
+
 load();
+
 </script>
+
 </body>
 </html>
